@@ -27,13 +27,13 @@ public class TestTextBox extends SimpleViewManager {
     }
 
     @Override
-    protected TextView createViewInstance(ThemedReactContext reactContext) {
-        TextView newText = new TextView(reactContext);
+    protected CustomisedView createViewInstance(ThemedReactContext reactContext) {
+      CustomisedView newText = new CustomisedView(reactContext);
         return newText;
     }
 
     @ReactProp(name = "text")
-    public void setText(TextView view, @Nullable String text) {
+    public void setText(CustomisedView view, @Nullable String text) {
         view.setText(text);
     }
 }
