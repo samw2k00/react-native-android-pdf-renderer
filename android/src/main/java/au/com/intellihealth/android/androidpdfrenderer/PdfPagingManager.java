@@ -14,6 +14,8 @@ import com.facebook.react.uimanager.ThemedReactContext;
 
 public class PdfPagingManager extends SimpleViewManager<PdfPagingView> {
   private ReactApplicationContext mContext;
+  private PdfPagingView mPdfPagingView;
+
   public PdfPagingManager(ReactApplicationContext context) {
     this.mContext = context;
   }
@@ -25,6 +27,8 @@ public class PdfPagingManager extends SimpleViewManager<PdfPagingView> {
 
   @Override
   protected PdfPagingView createViewInstance(ThemedReactContext reactContext) {
-    return new PdfPagingView(reactContext, mContext);
+    //Save local instance
+    this.mPdfPagingView = new PdfPagingView(reactContext, mContext);
+    return this.mPdfPagingView;
   }
 }
