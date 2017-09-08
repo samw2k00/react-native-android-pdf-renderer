@@ -55,6 +55,11 @@ public class PdfPagingView extends RelativeLayout {
     init(null, 0);
   }
 
+  public void setPath(String path){
+    Log.i(TAG, "PDF Source path: " + path.toString());
+    srcPdfFilename = path;
+  }
+
   @Override
   protected void onDraw(Canvas canvas) {
     super.onDraw(canvas);
@@ -88,6 +93,7 @@ public class PdfPagingView extends RelativeLayout {
     this.currentPage = ss.currentPage;
   }
 
+
   private void preparePDF() {
     try {
       File file,folder;
@@ -100,8 +106,8 @@ public class PdfPagingView extends RelativeLayout {
       }
       Log.i(TAG, "PDF Source Folder: " + folder.toString());
 
-      file = new File(folder, srcPdfFilename);
-      Log.i(TAG, "PDF Source file: " + folder.toString());
+      file = new File(srcPdfFilename);
+      Log.i(TAG, "PDF Source file: " + file);
 
 
       renderer = new PdfRenderer(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY));
