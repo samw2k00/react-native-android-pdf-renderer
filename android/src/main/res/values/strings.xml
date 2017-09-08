@@ -1,5 +1,4 @@
 <resources>
-  <string name="button_text">My Button Value</string>
   <string name="previous">Previous</string>
   <string name="next">Next</string>
 </resources>

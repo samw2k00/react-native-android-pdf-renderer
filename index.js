@@ -2,15 +2,15 @@
 import { requireNativeComponent, View } from 'react-native';
 import { PropTypes } from 'react';
 
-const myText = {
-          name: 'MyText',
+const pdfPaging = {
+          name: 'PdfPaging',
           propTypes: {
                text: PropTypes.string,
                 ...View.propTypes
           }
 }
 
-const MyText = requireNativeComponent('PdfPagingManager', myText);
+const PdfPaging = requireNativeComponent('PdfPagingManager', pdfPaging);
 
 
-export default MyText;
+export default PdfPaging;
