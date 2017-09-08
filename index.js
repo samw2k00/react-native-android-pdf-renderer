@@ -10,7 +10,7 @@ const myText = {
           }
 }
 
-const MyText = requireNativeComponent('TestTextBox', myText);
+const MyText = requireNativeComponent('PdfPagingManager', myText);
 
 
 export default MyText;
