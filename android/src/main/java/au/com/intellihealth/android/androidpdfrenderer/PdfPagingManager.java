@@ -28,7 +28,7 @@ public class PdfPagingManager extends SimpleViewManager<PdfPagingView> {
   @Override
   protected PdfPagingView createViewInstance(ThemedReactContext reactContext) {
     //Save local instance
-    this.mPdfPagingView = new PdfPagingView(reactContext, mContext);
+    this.mPdfPagingView = new PdfPagingView(mContext);
     return this.mPdfPagingView;
   }
 }

@@ -1,9 +1,7 @@
 package au.com.intellihealth.android.androidpdfrenderer;
 
 import android.annotation.TargetApi;
-import android.app.Activity;
 import android.content.Context;
-import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -20,7 +18,8 @@ import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 
-import com.facebook.react.uimanager.ThemedReactContext;
+import com.davemorrissey.labs.subscaleview.ImageSource;
+import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.io.File;
 import java.io.IOException;
@@ -33,25 +32,22 @@ import it.sephiroth.android.library.imagezoom.ImageViewTouch;
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class PdfPagingView extends RelativeLayout {
   private static final String TAG = "PdfPagingView";
-  Context mContext;
-  ThemedReactContext mReactContext;
   private static final int PDF_PAGE_PADDING = 5;
   private static final int PORTRAIT = 0, LANDSCAPE = 1;
   private static final String CURRENT_PAGE = "CURRENT_PAGE";
-  private ImageViewTouch imageView;
-  private int maxPdfWidth = 0, maxPdfHeight = 0;
-  private int maxScaledWidth = 0, maxScaledHeight = 0;
-  private float screenWidthRatio = 1.0f;
-  private int totalPdfHeight = 0;
+  private SubsamplingScaleImageView imageView;
   private int currentPage = 0, imageWidth, imageHeight, orientation = PORTRAIT;
   private Button previous, next;
   private PdfRenderer renderer;
   private String srcPdfFilename = "test.pdf";
 
-  public PdfPagingView(ThemedReactContext reactContext, Context context) {
-    super(reactContext);
-    this.mContext = context;
-    this.mReactContext = reactContext;
+  public PdfPagingView(Context context, AttributeSet attrs) {
+    super(context, attrs);
+    init(attrs, 0);
+  }
+
+  public PdfPagingView(Context context) {
+    super(context);
     init(null, 0);
   }
 
@@ -105,34 +101,6 @@ public class PdfPagingView extends RelativeLayout {
 
 
       renderer = new PdfRenderer(ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY));
-      int pdfPageHeight, pdfPageWidth;
-      for (int i = 0; i < renderer.getPageCount(); i++) {
-        PdfRenderer.Page pdfPage = renderer.openPage(i);
-        pdfPageHeight = pdfPage.getHeight();
-        pdfPageWidth = pdfPage.getWidth();
-
-        if (pdfPageWidth > maxPdfWidth) {
-          //Log.i(TAG, "Current (w/h): "+maxPdfWidth+"/"+maxPdfHeight+" | new: "+pdfPageWidth+"/"+pdfPageHeight);
-          maxPdfWidth = pdfPageWidth;
-          maxPdfHeight = pdfPageHeight;
-        }
-        totalPdfHeight += pdfPageHeight;
-
-        pdfPage.close();
-      }
-      // Adding the padding between the pages
-      totalPdfHeight += (renderer.getPageCount() - 1) * PDF_PAGE_PADDING;
-      // Calculates the screen width ratio (we're scrolling vertically)
-      if (orientation == PORTRAIT) {
-        Log.i(TAG, "In PORTRAIT");
-        screenWidthRatio = (float) imageWidth / maxPdfWidth;
-      } else {
-        Log.i(TAG, "In LANDSCAPE");
-        screenWidthRatio = (float) imageHeight / maxPdfHeight;
-      }
-      Log.i(TAG, "Max PDF Height: " + maxPdfHeight + " | max PDF Width: " + maxPdfWidth + " | total PDF Height: " + totalPdfHeight + " | screenWidthRatio:" + screenWidthRatio);
-      maxScaledWidth = (int) (maxPdfWidth * screenWidthRatio);
-      maxScaledHeight = (int) (maxPdfHeight * screenWidthRatio);
 
     } catch (IOException e) {
       e.printStackTrace();
@@ -151,9 +119,7 @@ public class PdfPagingView extends RelativeLayout {
         }
         //TODO don't render if we're already on the last page... (disable next/previous button)
 
-        Log.i(TAG, "maxPdfHeight: " + maxPdfHeight + " | maxPdfWidth: " + maxPdfWidth);
         Log.i(TAG, "screenHeight: " + imageHeight + " | screenWidth: " + imageWidth);
-        Log.i(TAG, "totalPdfHeight: " + totalPdfHeight);
 
         // We still need a bitmap to convert the PDF page
         int pdfPageHeight = 0, pdfPageWidth = 0;
@@ -179,7 +145,8 @@ public class PdfPagingView extends RelativeLayout {
 
         pdfPage.render(currentPageBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
 
-        imageView.setImageBitmap(currentPageBitmap);
+        ImageSource imgSrc = ImageSource.cachedBitmap(currentPageBitmap);
+        imageView.setImage(imgSrc);
         imageView.invalidate();
         pdfPage.close();
       }
@@ -189,8 +156,9 @@ public class PdfPagingView extends RelativeLayout {
   }
 
   private void init(AttributeSet attrs, int defStyle) {
+
     inflate(getContext(), R.layout.activity_pdf_paging, this);
-    imageView = (ImageViewTouch) findViewById(R.id.imagepdf);
+    imageView = (SubsamplingScaleImageView) findViewById(R.id.imagepdf);
 
     previous = (Button) findViewById(R.id.pdfPrevious);
     next = (Button) findViewById(R.id.pdfNext);
