@@ -47,6 +47,7 @@ public class PdfPagingView extends RelativeLayout {
     public void setPath(String path) {
         Log.i(TAG, "PDF Source path: " + path);
         srcPdfFilename = path;
+        preparePDF();
     }
 
     @Override
@@ -158,7 +159,6 @@ public class PdfPagingView extends RelativeLayout {
     }
 
     private void init() {
-        preparePDF();
         inflate(getContext(), R.layout.activity_pdf_paging, this);
         imageView = (SubsamplingScaleImageView) findViewById(R.id.imagepdf);
 
