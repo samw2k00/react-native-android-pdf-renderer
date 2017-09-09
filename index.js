@@ -5,7 +5,7 @@ import { PropTypes } from 'react';
 const pdfPaging = {
           name: 'PdfPaging',
           propTypes: {
-               text: PropTypes.string,
+               path: PropTypes.string,
                 ...View.propTypes
           }
 }
