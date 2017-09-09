@@ -53,6 +53,7 @@ public class PdfPagingView extends RelativeLayout {
     public void setCurrentPage(int page){
         Log.i(TAG, "Setting PDF page to : " + page);
         this.currentPage = page;
+        render();
     }
 
     public int getPageCount(){
