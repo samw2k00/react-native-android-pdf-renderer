@@ -6,7 +6,7 @@ const pdfPaging = {
           name: 'PdfPaging',
           propTypes: {
                path: PropTypes.string,
-               currentPage: PropTypes.int,
+               currentPage: PropTypes.number,
                getPageCount: PropTypes.func,
                getCurrentPage: PropTypes.func,
                 ...View.propTypes
