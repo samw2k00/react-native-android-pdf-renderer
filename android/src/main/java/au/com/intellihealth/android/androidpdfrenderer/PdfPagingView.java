@@ -10,18 +10,17 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
-import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 
+import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 
 /**
  */
@@ -30,13 +29,10 @@ public class PdfPagingView extends RelativeLayout {
     private static final String TAG = "PdfPagingView";
     private static final int PORTRAIT = 0, LANDSCAPE = 1;
     private SubsamplingScaleImageView imageView;
-    private int imageWidth, imageHeight, orientation = PORTRAIT;
+    private int currentPage = 0, imageWidth, imageHeight, orientation = PORTRAIT;
     private Button previous, next;
-    private static int NUM_PAGES = 0;
-    private PdfRenderer renderer = null;
-    private static ViewPager mPager;
+    private PdfRenderer renderer;
     private String srcPdfFilename;
-    private ArrayList<Bitmap> pdfPagesArray = new ArrayList();
 
     public PdfPagingView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -54,6 +50,25 @@ public class PdfPagingView extends RelativeLayout {
         preparePDF();
     }
 
+    public void setCurrentPage(int page){
+        Log.i(TAG, "Setting PDF page to : " + page);
+        this.currentPage = page;
+    }
+
+    public int getPageCount(){
+        if(renderer != null){
+            Log.i(TAG, "Returning page Count : " + renderer.getPageCount());
+            return renderer.getPageCount();
+        }
+        Log.w(TAG, "Renderer not available, returning 0");
+        return 0;
+    }
+
+    public int getCurrentPage(){
+        Log.i(TAG, "Returning current page index : " + currentPage);
+        return currentPage;
+    }
+
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
         super.onSizeChanged(w, h, oldw, oldh);
@@ -63,9 +78,9 @@ public class PdfPagingView extends RelativeLayout {
         if (imageWidth > imageHeight) {
             orientation = LANDSCAPE;
         }
-        Log.i(TAG, "onSizeChanged (w/h): " + w + "/" + h);
-        preparePDF();
 
+        Log.i(TAG, "onSizeChanged (w/h): "+w+"/"+h);
+        render();
     }
 
     @Override
@@ -81,7 +96,7 @@ public class PdfPagingView extends RelativeLayout {
         SavedState ss = new SavedState(superState);
         //end
 
-        //ss.currentPage = this.currentPage;
+        ss.currentPage = this.currentPage;
 
         return ss;
     }
@@ -98,31 +113,16 @@ public class PdfPagingView extends RelativeLayout {
         super.onRestoreInstanceState(ss.getSuperState());
         //end
 
-        //this.currentPage = ss.currentPage;
+        this.currentPage = ss.currentPage;
     }
 
 
     private void preparePDF() {
-        if (imageWidth == 0 || imageHeight == 0) {
-            Log.i(TAG, "imageWidth || imageHeight == 0");
-            return;
-        }
-
+        Log.i(TAG, "preparePDF, "+srcPdfFilename);
         try {
-            Log.i(TAG, "preparePDF, " + srcPdfFilename);
-            if (new File(srcPdfFilename).canRead()) {
-                if(renderer == null){
-                    renderer = new PdfRenderer(ParcelFileDescriptor.open(new File(srcPdfFilename), ParcelFileDescriptor.MODE_READ_ONLY));
-                }
-                NUM_PAGES = renderer.getPageCount();
-                for (int i = 0; i < renderer.getPageCount(); i++) {
-                    PdfRenderer.Page pdfPage = renderer.openPage(i);
-                    pdfPagesArray.add(renderPage(pdfPage));
-                    pdfPage.close();
-                }
-
-                mPager.setAdapter(new SlidingImageAdapter(getContext(), pdfPagesArray));
-            } else {
+            if(new File(srcPdfFilename).canRead()){
+                renderer = new PdfRenderer(ParcelFileDescriptor.open(new File(srcPdfFilename), ParcelFileDescriptor.MODE_READ_ONLY));
+            }else{
                 Log.e(TAG, "The file doesn't exists...");
             }
         } catch (IOException e) {
@@ -130,37 +130,56 @@ public class PdfPagingView extends RelativeLayout {
         }
     }
 
-    private Bitmap renderPage(PdfRenderer.Page pdfPage) {
-        Bitmap currentPageBitmap = null;
+    private void render() {
+        Log.i("PDF", "render (w/h)---  " + imageWidth + "x" + imageHeight);
+
         try {
-            Log.i(TAG, "----------------------- Page " + pdfPage.getIndex() + " -------------------------");
-            int pdfPageHeight = pdfPage.getHeight();
-            int pdfPageWidth = pdfPage.getWidth();
-            Log.i(TAG, "pdfPageWidth: " + pdfPageWidth+ " | pdfPageHeight: " + pdfPageHeight);
-            Log.i(TAG, "imageWidth: "+imageWidth + " | imageHeight: " + imageHeight);
+            if (imageWidth > 0 && imageHeight > 0) {
+                if (currentPage < 0) {
+                    currentPage = 0;
+                } else if (currentPage > renderer.getPageCount() - 1) {
+                    currentPage = renderer.getPageCount() - 1;
+                }
+                //TODO don't render if we're already on the last page... (disable next/previous button)
 
-            //pdfPageWidth = density * pdfPageWidth / 150;
-            //pdfPageHeight = density * pdfPageHeight / 150;
+                Log.i(TAG, "screenHeight: " + imageHeight + " | screenWidth: " + imageWidth);
 
-            // All page should have the same height
-            currentPageBitmap = Bitmap.createBitmap(pdfPageWidth, pdfPageHeight, Bitmap.Config.ARGB_8888);
-            Canvas canvas = new Canvas(currentPageBitmap);
-            canvas.drawColor(Color.WHITE);
-            canvas.drawBitmap(currentPageBitmap, 0, 0, null);
+                // We still need a bitmap to convert the PDF page
+                int pdfPageHeight = 0, pdfPageWidth = 0;
+                float scale = 1f;
 
-            pdfPage.render(currentPageBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                Log.i(TAG, "----------------------- Page " + currentPage + " -------------------------");
+                PdfRenderer.Page pdfPage = renderer.openPage(currentPage);
+                pdfPageHeight = pdfPage.getHeight();
+                pdfPageWidth = pdfPage.getWidth();
+                Log.i(TAG, "pdfPageHeight: " + pdfPageHeight + " | pdfPageWidth: " + pdfPageWidth);
 
+                int density = getResources().getDisplayMetrics().densityDpi;
+                Log.i(TAG, "density: " + density);
+                pdfPageWidth = density * pdfPageWidth / 150;
+                pdfPageHeight = density * pdfPageHeight / 150;
 
+                // All page should have the same height
+                Bitmap currentPageBitmap = Bitmap.createBitmap(pdfPageWidth, pdfPageHeight, Bitmap.Config.ARGB_8888);
+                Canvas canvas = new Canvas(currentPageBitmap);
+                canvas.drawColor(Color.WHITE);
+                canvas.drawBitmap(currentPageBitmap, 0, 0, null);
+
+                pdfPage.render(currentPageBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+
+                ImageSource imgSrc = ImageSource.cachedBitmap(currentPageBitmap);
+                imageView.setImage(imgSrc);
+                imageView.invalidate();
+                pdfPage.close();
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return currentPageBitmap;
     }
 
     private void init() {
-        inflate(getContext(), R.layout.activity_pdf_pager, this);
+        inflate(getContext(), R.layout.activity_pdf_paging, this);
         imageView = (SubsamplingScaleImageView) findViewById(R.id.imagepdf);
-        mPager = (ViewPager) findViewById(R.id.pager);
 
         previous = (Button) findViewById(R.id.pdfPrevious);
         next = (Button) findViewById(R.id.pdfNext);
@@ -168,13 +187,15 @@ public class PdfPagingView extends RelativeLayout {
         next.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //currentPage++;
+                currentPage++;
+                render();
             }
         });
         previous.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                //currentPage--;
+                currentPage--;
+                render();
             }
         });
     }

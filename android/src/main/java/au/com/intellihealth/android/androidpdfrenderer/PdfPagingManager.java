@@ -4,7 +4,10 @@ import android.app.Activity;
 import android.content.Context;
 import android.view.View;
 
+import com.facebook.react.bridge.Callback;
 import com.facebook.react.bridge.ReactApplicationContext;
+import com.facebook.react.bridge.ReactMethod;
+import com.facebook.react.uimanager.IllegalViewOperationException;
 import com.facebook.react.uimanager.SimpleViewManager;
 import com.facebook.react.uimanager.ThemedReactContext;
 import com.facebook.react.uimanager.annotations.ReactProp;
@@ -37,6 +40,28 @@ public class PdfPagingManager extends SimpleViewManager<PdfPagingView> {
   @ReactProp(name = "path")
   public void setPath(PdfPagingView view, @Nullable String path) {
     view.setPath(path);
+  }
+
+  @ReactProp (name="currentPage")
+  public void setCurrentPage(PdfPagingView view, @Nullable int page){
+    view.setCurrentPage(page);
+  }
+
+  @ReactMethod
+  public void getPageCount(PdfPagingView view, Callback errorCallback, Callback successCallback){
+    try {
+      successCallback.invoke(view.getPageCount());
+    }catch (IllegalViewOperationException e) {
+      errorCallback.invoke(e.getMessage());
+    }
+  }
+  @ReactMethod
+  public void getCurrentPage(PdfPagingView view, Callback errorCallback, Callback successCallback){
+    try {
+      successCallback.invoke(view.getCurrentPage());
+    }catch (IllegalViewOperationException e) {
+      errorCallback.invoke(e.getMessage());
+    }
   }
 
 }
