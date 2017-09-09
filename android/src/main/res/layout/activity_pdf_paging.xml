@@ -15,15 +15,6 @@
         android:background="@android:color/darker_gray"
         android:fillViewport="true"/>
 
-    <!--
-    <it.sephiroth.android.library.imagezoom.ImageViewTouch
-        android:id="@+id/imagepdf"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_weight="1"
-        android:background="@android:color/darker_gray"
-        android:fillViewport="true" />
--->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"

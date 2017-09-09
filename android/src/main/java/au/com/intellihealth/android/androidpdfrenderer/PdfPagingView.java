@@ -7,14 +7,12 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.pdf.PdfRenderer;
 import android.os.Build;
-import android.os.Environment;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
-import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 
@@ -24,17 +22,12 @@ import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
 import java.io.File;
 import java.io.IOException;
 
-import it.sephiroth.android.library.imagezoom.ImageViewTouch;
-
-
 /**
  */
 @TargetApi(Build.VERSION_CODES.LOLLIPOP)
 public class PdfPagingView extends RelativeLayout {
     private static final String TAG = "PdfPagingView";
-    private static final int PDF_PAGE_PADDING = 5;
     private static final int PORTRAIT = 0, LANDSCAPE = 1;
-    private static final String CURRENT_PAGE = "CURRENT_PAGE";
     private SubsamplingScaleImageView imageView;
     private int currentPage = 0, imageWidth, imageHeight, orientation = PORTRAIT;
     private Button previous, next;
@@ -43,17 +36,31 @@ public class PdfPagingView extends RelativeLayout {
 
     public PdfPagingView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init(attrs, 0);
+        init();
     }
 
     public PdfPagingView(Context context) {
         super(context);
-        init(null, 0);
+        init();
     }
 
     public void setPath(String path) {
-        Log.i(TAG, "PDF Source path: " + path.toString());
+        Log.i(TAG, "PDF Source path: " + path);
         srcPdfFilename = path;
+    }
+
+    @Override
+    protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+        super.onSizeChanged(w, h, oldw, oldh);
+        imageHeight = h;
+        imageWidth = w;
+
+        if (imageWidth > imageHeight) {
+            orientation = LANDSCAPE;
+        }
+
+        Log.i(TAG, "onSizeChanged (w/h): "+w+"/"+h);
+        render();
     }
 
     @Override
@@ -91,8 +98,13 @@ public class PdfPagingView extends RelativeLayout {
 
 
     private void preparePDF() {
+        Log.i(TAG, "preparePDF, "+srcPdfFilename);
         try {
-            renderer = new PdfRenderer(ParcelFileDescriptor.open(new File(srcPdfFilename), ParcelFileDescriptor.MODE_READ_ONLY));
+            if(new File(srcPdfFilename).canRead()){
+                renderer = new PdfRenderer(ParcelFileDescriptor.open(new File(srcPdfFilename), ParcelFileDescriptor.MODE_READ_ONLY));
+            }else{
+                Log.e(TAG, "The file doesn't exists...");
+            }
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -114,7 +126,6 @@ public class PdfPagingView extends RelativeLayout {
 
                 // We still need a bitmap to convert the PDF page
                 int pdfPageHeight = 0, pdfPageWidth = 0;
-                float topOffset = 0f, leftOffset = 0f;
                 float scale = 1f;
 
                 Log.i(TAG, "----------------------- Page " + currentPage + " -------------------------");
@@ -146,8 +157,8 @@ public class PdfPagingView extends RelativeLayout {
         }
     }
 
-    private void init(AttributeSet attrs, int defStyle) {
-
+    private void init() {
+        preparePDF();
         inflate(getContext(), R.layout.activity_pdf_paging, this);
         imageView = (SubsamplingScaleImageView) findViewById(R.id.imagepdf);
 
@@ -169,6 +180,16 @@ public class PdfPagingView extends RelativeLayout {
             }
         });
 
+        /*
+        imageView.post(new Runnable() {
+           @Override
+           public void run() {
+               imageHeight = imageView.getMeasuredHeight();
+               imageWidth = imageView.getMeasuredWidth();
+           }
+        });
+        */
+            /*
         imageView.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
 
             @Override
@@ -189,7 +210,7 @@ public class PdfPagingView extends RelativeLayout {
                 render();
             }
         });
-
+*/
 
     }
 
