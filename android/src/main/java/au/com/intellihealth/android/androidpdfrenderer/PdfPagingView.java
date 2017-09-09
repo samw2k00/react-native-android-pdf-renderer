@@ -181,6 +181,7 @@ public class PdfPagingView extends RelativeLayout {
         inflate(getContext(), R.layout.activity_pdf_paging, this);
         imageView = (SubsamplingScaleImageView) findViewById(R.id.imagepdf);
 
+        /*
         previous = (Button) findViewById(R.id.pdfPrevious);
         next = (Button) findViewById(R.id.pdfNext);
 
@@ -198,6 +199,7 @@ public class PdfPagingView extends RelativeLayout {
                 render();
             }
         });
+        */
     }
 
 
