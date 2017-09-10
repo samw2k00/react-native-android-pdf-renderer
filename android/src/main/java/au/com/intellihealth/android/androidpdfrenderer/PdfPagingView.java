@@ -19,6 +19,10 @@ import android.widget.RelativeLayout;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.bridge.ReactContext;
+import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.uimanager.events.RCTEventEmitter;
 
 import java.io.File;
 import java.io.IOException;
@@ -118,20 +122,43 @@ public class PdfPagingView extends RelativeLayout {
         this.currentPage = ss.currentPage;
     }
 
-
     private void preparePDF() {
         Log.i(TAG, "preparePDF, "+srcPdfFilename);
         try {
             if(new File(srcPdfFilename).canRead()){
                 renderer = new PdfRenderer(ParcelFileDescriptor.open(new File(srcPdfFilename), ParcelFileDescriptor.MODE_READ_ONLY));
+                int totalPage = renderer.getPageCount();
+                WritableMap event = Arguments.createMap();
+                event.putString("message", "loadComplete|"+totalPage);
+                ReactContext reactContext = (ReactContext) getContext();
+                reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                        getId(),
+                        "topChange",
+                        event
+                );
             }else{
                 Log.e(TAG, "The file doesn't exists...");
+                WritableMap event = Arguments.createMap();
+                event.putString("message", "error|" + "The file doesn't exists");
+                ReactContext reactContext = (ReactContext) getContext();
+                reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                        getId(),
+                        "topChange",
+                        event
+                );
             }
         } catch (IOException e) {
             e.printStackTrace();
+            WritableMap event = Arguments.createMap();
+            event.putString("message", "error|" + e.toString());
+            ReactContext reactContext = (ReactContext) getContext();
+            reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                    getId(),
+                    "topChange",
+                    event
+            );
         }
     }
-
     private void render() {
         Log.i("PDF", "render (w/h)---  " + imageWidth + "x" + imageHeight);
 
@@ -139,8 +166,17 @@ public class PdfPagingView extends RelativeLayout {
             if (imageWidth > 0 && imageHeight > 0) {
                 if (currentPage < 0) {
                     currentPage = 0;
+                    previous.setEnabled(false);
                 } else if (currentPage > renderer.getPageCount() - 1) {
                     currentPage = renderer.getPageCount() - 1;
+                    next.setEnabled(false);
+                }else{
+                    if(!previous.isEnabled()){
+                        previous.setEnabled(true);
+                    }
+                    if(!next.isEnabled()){
+                        next.setEnabled(true);
+                    }
                 }
 
                 Log.i(TAG, "screenHeight: " + imageHeight + " | screenWidth: " + imageWidth);
@@ -149,7 +185,15 @@ public class PdfPagingView extends RelativeLayout {
                 int pdfPageHeight = 0, pdfPageWidth = 0;
 
                 Log.i(TAG, "----------------------- Page " + currentPage + " -------------------------");
-                PdfRenderer.Page pdfPage = renderer.openPage(currentPage);
+                PdfRenderer.Page pdfPage=null;
+                try {
+                    pdfPage = renderer.openPage(currentPage);
+                } finally {
+                    if(pdfPage != null){
+                        pdfPage.close();
+                        pdfPage = renderer.openPage(currentPage);
+                    }
+                }
                 pdfPageHeight = pdfPage.getHeight();
                 pdfPageWidth = pdfPage.getWidth();
                 Log.i(TAG, "pdfPageHeight: " + pdfPageHeight + " | pdfPageWidth: " + pdfPageWidth);
@@ -163,10 +207,11 @@ public class PdfPagingView extends RelativeLayout {
                 // Since we want good quality even in landscape, we will base our scale ONLY
                 // on height ratio...
                 // This means the landscape pages WILL be bigger in size (memory).
-                float scale = scale = imageHeight / pdfPageHeight;
+                float scale = (float)imageHeight / (float)pdfPageHeight;
+                Log.i(TAG, "scale: " + scale);
 
-                pdfPageWidth = (int) scale * pdfPageWidth;
-                pdfPageHeight = (int) scale * pdfPageHeight;
+                pdfPageWidth = (int) (scale * pdfPageWidth);
+                pdfPageHeight = (int) (scale * pdfPageHeight);
                 Log.i(TAG, "scaledPdfPageHeight: " + pdfPageHeight + " | scaledPdfPageWidth: " + pdfPageWidth);
 
                 // All page should have the same height
@@ -176,11 +221,21 @@ public class PdfPagingView extends RelativeLayout {
                 canvas.drawBitmap(currentPageBitmap, 0, 0, null);
 
                 pdfPage.render(currentPageBitmap, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                pdfPage.close();
 
                 ImageSource imgSrc = ImageSource.cachedBitmap(currentPageBitmap);
                 imageView.setImage(imgSrc);
                 imageView.invalidate();
-                pdfPage.close();
+
+                // broadcast to REACT NATIVE whats the current page
+                WritableMap event = Arguments.createMap();
+                event.putString("message", "currentPage|"+ (currentPage+ 1));
+                ReactContext reactContext = (ReactContext) getContext();
+                reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
+                        getId(),
+                        "topChange",
+                        event
+                );
             }
         } catch (Exception e) {
             e.printStackTrace();
