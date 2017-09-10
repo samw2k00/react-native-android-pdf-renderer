@@ -1,19 +1,54 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:backgroundTint="@android:color/darker_gray"
     android:orientation="vertical"
-    >
+    android:id="@+id/root_layout"
+    android:theme="@style/Base.Theme.AppCompat.Light"
+    tools:ignore="UnusedAttribute">
 
 
-    <com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
-        android:id="@+id/imagepdf"
+    <FrameLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
         android:layout_weight="1"
-        android:background="@android:color/darker_gray"
-        android:fillViewport="true"/>
+        tools:ignore="UselessParent"
+        >
+
+        <com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
+            android:id="@+id/imagepdf"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/darker_gray"
+            android:fillViewport="true"/>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/pdfPrevious"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="start|center_vertical"
+            android:src="@drawable/ic_chevron_left_white_24dp"
+
+            app:fabSize="normal"
+            app:layout_anchor="@id/root_layout"
+
+            android:theme="@style/Base.Theme.AppCompat.Light"/>
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/pdfNext"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="end|center_vertical"
+            android:src="@drawable/ic_chevron_right_white_24dp"
+
+            app:fabSize="normal"
+            app:layout_anchor="@id/root_layout"
+            android:theme="@style/Base.Theme.AppCompat.Light"/>
+
+
+    </FrameLayout>
 
     <!--
     <LinearLayout

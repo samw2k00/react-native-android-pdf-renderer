@@ -10,6 +10,7 @@ import android.os.Build;
 import android.os.Parcel;
 import android.os.ParcelFileDescriptor;
 import android.os.Parcelable;
+import android.support.design.widget.FloatingActionButton;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
@@ -30,7 +31,7 @@ public class PdfPagingView extends RelativeLayout {
     private static final int PORTRAIT = 0, LANDSCAPE = 1;
     private SubsamplingScaleImageView imageView;
     private int currentPage = 0, imageWidth, imageHeight, orientation = PORTRAIT;
-    private Button previous, next;
+    private FloatingActionButton previous, next;
     private PdfRenderer renderer;
     private String srcPdfFilename;
 
@@ -141,13 +142,11 @@ public class PdfPagingView extends RelativeLayout {
                 } else if (currentPage > renderer.getPageCount() - 1) {
                     currentPage = renderer.getPageCount() - 1;
                 }
-                //TODO don't render if we're already on the last page... (disable next/previous button)
 
                 Log.i(TAG, "screenHeight: " + imageHeight + " | screenWidth: " + imageWidth);
 
                 // We still need a bitmap to convert the PDF page
                 int pdfPageHeight = 0, pdfPageWidth = 0;
-                float scale = 1f;
 
                 Log.i(TAG, "----------------------- Page " + currentPage + " -------------------------");
                 PdfRenderer.Page pdfPage = renderer.openPage(currentPage);
@@ -155,10 +154,20 @@ public class PdfPagingView extends RelativeLayout {
                 pdfPageWidth = pdfPage.getWidth();
                 Log.i(TAG, "pdfPageHeight: " + pdfPageHeight + " | pdfPageWidth: " + pdfPageWidth);
 
-                int density = getResources().getDisplayMetrics().densityDpi;
-                Log.i(TAG, "density: " + density);
-                pdfPageWidth = density * pdfPageWidth / 150;
-                pdfPageHeight = density * pdfPageHeight / 150;
+                // Detect if the PDf page is in landscape or portrait
+                int pdfPageOrientation = PORTRAIT;
+                if(pdfPageWidth > pdfPageHeight){
+                    pdfPageOrientation = LANDSCAPE;
+                }
+                // Check if we need to scale up or down the page.
+                // Since we want good quality even in landscape, we will base our scale ONLY
+                // on height ratio...
+                // This means the landscape pages WILL be bigger in size (memory).
+                float scale = scale = imageHeight / pdfPageHeight;
+
+                pdfPageWidth = (int) scale * pdfPageWidth;
+                pdfPageHeight = (int) scale * pdfPageHeight;
+                Log.i(TAG, "scaledPdfPageHeight: " + pdfPageHeight + " | scaledPdfPageWidth: " + pdfPageWidth);
 
                 // All page should have the same height
                 Bitmap currentPageBitmap = Bitmap.createBitmap(pdfPageWidth, pdfPageHeight, Bitmap.Config.ARGB_8888);
@@ -182,9 +191,8 @@ public class PdfPagingView extends RelativeLayout {
         inflate(getContext(), R.layout.activity_pdf_paging, this);
         imageView = (SubsamplingScaleImageView) findViewById(R.id.imagepdf);
 
-        /*
-        previous = (Button) findViewById(R.id.pdfPrevious);
-        next = (Button) findViewById(R.id.pdfNext);
+        previous = (FloatingActionButton) findViewById(R.id.pdfPrevious);
+        next = (FloatingActionButton) findViewById(R.id.pdfNext);
 
         next.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -200,7 +208,6 @@ public class PdfPagingView extends RelativeLayout {
                 render();
             }
         });
-        */
     }
 
 

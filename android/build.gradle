@@ -12,18 +12,21 @@ buildscript {
 apply plugin: 'com.android.library'
 
 android {
-    compileSdkVersion 23
+    compileSdkVersion 25
     buildToolsVersion "25.0.0"
 
     defaultConfig {
         minSdkVersion 16
-        targetSdkVersion 26
+        targetSdkVersion 25
         versionCode 1
         versionName "1.0"
     }
     lintOptions {
         abortOnError false
     }
+}
+ext {
+    supportLibVersion = '25.0.0'  // variable that can be referenced to keep support libs consistent
 }
 
 repositories {
@@ -33,7 +36,9 @@ repositories {
 
 dependencies {
     compile 'com.facebook.react:react-native:+'
-    compile 'com.android.support.constraint:constraint-layout:+'
+    compile 'com.android.support.constraint:constraint-layout:1.0.2'
+    compile "com.android.support:appcompat-v7:${supportLibVersion}"
+    compile "com.android.support:design:${supportLibVersion}"
     compile 'com.davemorrissey.labs:subsampling-scale-image-view:3.6.0'
 }
 
