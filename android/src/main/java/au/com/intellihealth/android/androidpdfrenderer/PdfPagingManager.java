@@ -47,21 +47,5 @@ public class PdfPagingManager extends SimpleViewManager<PdfPagingView> {
     view.setCurrentPage(page);
   }
 
-  @ReactMethod
-  public void getPageCount(PdfPagingView view, Callback errorCallback, Callback successCallback){
-    try {
-      successCallback.invoke(view.getPageCount());
-    }catch (IllegalViewOperationException e) {
-      errorCallback.invoke(e.getMessage());
-    }
-  }
-  @ReactMethod
-  public void getCurrentPage(PdfPagingView view, Callback errorCallback, Callback successCallback){
-    try {
-      successCallback.invoke(view.getCurrentPage());
-    }catch (IllegalViewOperationException e) {
-      errorCallback.invoke(e.getMessage());
-    }
-  }
 
 }
