@@ -15,6 +15,7 @@ import android.util.AttributeSet;
 import android.util.Log;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.RelativeLayout;
 
 import com.davemorrissey.labs.subscaleview.ImageSource;
@@ -38,6 +39,7 @@ public class PdfPagingView extends RelativeLayout {
     private FloatingActionButton previous, next;
     private PdfRenderer renderer;
     private String srcPdfFilename;
+    private FrameLayout previousWrapper, nextWrapper;
 
     public PdfPagingView(Context context, AttributeSet attrs) {
         super(context, attrs);
@@ -55,14 +57,14 @@ public class PdfPagingView extends RelativeLayout {
         preparePDF();
     }
 
-    public void setCurrentPage(int page){
+    public void setCurrentPage(int page) {
         Log.i(TAG, "Setting PDF page to : " + page);
         this.currentPage = page;
         render();
     }
 
-    public int getPageCount(){
-        if(renderer != null){
+    public int getPageCount() {
+        if (renderer != null) {
             Log.i(TAG, "Returning page Count : " + renderer.getPageCount());
             return renderer.getPageCount();
         }
@@ -70,7 +72,7 @@ public class PdfPagingView extends RelativeLayout {
         return 0;
     }
 
-    public int getCurrentPage(){
+    public int getCurrentPage() {
         Log.i(TAG, "Returning current page index : " + currentPage);
         return currentPage;
     }
@@ -85,7 +87,7 @@ public class PdfPagingView extends RelativeLayout {
             orientation = LANDSCAPE;
         }
 
-        Log.i(TAG, "onSizeChanged (w/h): "+w+"/"+h);
+        Log.i(TAG, "onSizeChanged (w/h): " + w + "/" + h);
         render();
     }
 
@@ -123,20 +125,20 @@ public class PdfPagingView extends RelativeLayout {
     }
 
     private void preparePDF() {
-        Log.i(TAG, "preparePDF, "+srcPdfFilename);
+        Log.i(TAG, "preparePDF, " + srcPdfFilename);
         try {
-            if(new File(srcPdfFilename).canRead()){
+            if (new File(srcPdfFilename).canRead()) {
                 renderer = new PdfRenderer(ParcelFileDescriptor.open(new File(srcPdfFilename), ParcelFileDescriptor.MODE_READ_ONLY));
                 int totalPage = renderer.getPageCount();
                 WritableMap event = Arguments.createMap();
-                event.putString("message", "loadComplete|"+totalPage);
+                event.putString("message", "loadComplete|" + totalPage);
                 ReactContext reactContext = (ReactContext) getContext();
                 reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                         getId(),
                         "topChange",
                         event
                 );
-            }else{
+            } else {
                 Log.e(TAG, "The file doesn't exists...");
                 WritableMap event = Arguments.createMap();
                 event.putString("message", "error|" + "The file doesn't exists");
@@ -159,25 +161,50 @@ public class PdfPagingView extends RelativeLayout {
             );
         }
     }
+
+    private void showPrevious(){
+        previousWrapper.setVisibility(View.VISIBLE);
+    }
+    private void hidePrevious(){
+        previousWrapper.setVisibility(View.INVISIBLE);
+    }
+
+    private void showNext(){
+        nextWrapper.setVisibility(View.VISIBLE);
+    }
+    private void hideNext(){
+        nextWrapper.setVisibility(View.INVISIBLE);
+    }
+
     private void render() {
         Log.i("PDF", "render (w/h)---  " + imageWidth + "x" + imageHeight);
 
         try {
             if (imageWidth > 0 && imageHeight > 0) {
                 if (currentPage < 0) {
+                    // If we're below 0, reset the current page
                     currentPage = 0;
-                    previous.setEnabled(false);
                 } else if (currentPage > renderer.getPageCount() - 1) {
+                    // If we're above the page count, reset the current page
                     currentPage = renderer.getPageCount() - 1;
-                    next.setEnabled(false);
-                }else{
-                    if(!previous.isEnabled()){
-                        previous.setEnabled(true);
-                    }
-                    if(!next.isEnabled()){
-                        next.setEnabled(true);
-                    }
                 }
+
+                if (getPageCount() == 1) {
+                    // if we only have 1 page, we hide both buttons.
+                    hidePrevious();
+                    hideNext();
+                }else if (currentPage == 0) {
+                    // If we're on the first page, hide the previous button
+                    hidePrevious();
+                } else if (currentPage == (renderer.getPageCount() - 1)) {
+                    // If we're on the first page, hide the next button
+                    hideNext();
+                } else {
+                    // If we're in between first and last page, we make sure the buttons are visible.
+                    showPrevious();
+                    showNext();
+                }
+
 
                 Log.i(TAG, "screenHeight: " + imageHeight + " | screenWidth: " + imageWidth);
 
@@ -185,11 +212,11 @@ public class PdfPagingView extends RelativeLayout {
                 int pdfPageHeight = 0, pdfPageWidth = 0;
 
                 Log.i(TAG, "----------------------- Page " + currentPage + " -------------------------");
-                PdfRenderer.Page pdfPage=null;
+                PdfRenderer.Page pdfPage = null;
                 try {
                     pdfPage = renderer.openPage(currentPage);
                 } finally {
-                    if(pdfPage != null){
+                    if (pdfPage != null) {
                         pdfPage.close();
                         pdfPage = renderer.openPage(currentPage);
                     }
@@ -200,14 +227,14 @@ public class PdfPagingView extends RelativeLayout {
 
                 // Detect if the PDf page is in landscape or portrait
                 int pdfPageOrientation = PORTRAIT;
-                if(pdfPageWidth > pdfPageHeight){
+                if (pdfPageWidth > pdfPageHeight) {
                     pdfPageOrientation = LANDSCAPE;
                 }
                 // Check if we need to scale up or down the page.
                 // Since we want good quality even in landscape, we will base our scale ONLY
                 // on height ratio...
                 // This means the landscape pages WILL be bigger in size (memory).
-                float scale = (float)imageHeight / (float)pdfPageHeight;
+                float scale = (float) imageHeight / (float) pdfPageHeight;
                 Log.i(TAG, "scale: " + scale);
 
                 pdfPageWidth = (int) (scale * pdfPageWidth);
@@ -229,7 +256,7 @@ public class PdfPagingView extends RelativeLayout {
 
                 // broadcast to REACT NATIVE whats the current page
                 WritableMap event = Arguments.createMap();
-                event.putString("message", "currentPage|"+ (currentPage+ 1));
+                event.putString("message", "currentPage|" + (currentPage + 1));
                 ReactContext reactContext = (ReactContext) getContext();
                 reactContext.getJSModule(RCTEventEmitter.class).receiveEvent(
                         getId(),
@@ -247,7 +274,9 @@ public class PdfPagingView extends RelativeLayout {
         imageView = (SubsamplingScaleImageView) findViewById(R.id.imagepdf);
 
         previous = (FloatingActionButton) findViewById(R.id.pdfPrevious);
+        previousWrapper = (FrameLayout) findViewById(R.id.fab_prev_wrapper);
         next = (FloatingActionButton) findViewById(R.id.pdfNext);
+        nextWrapper = (FrameLayout) findViewById(R.id.fav_next_wrapper);
 
         next.setOnClickListener(new View.OnClickListener() {
             @Override
