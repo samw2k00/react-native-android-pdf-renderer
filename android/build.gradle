@@ -36,7 +36,7 @@ repositories {
 }
 
 dependencies {
-    compile fileTree(dir: 'jniLibs', include: ['.jar','.so'])
+    compile fileTree(dir: 'jniLibs', include: '*.so')
     compile 'com.facebook.react:react-native:+'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile "com.android.support:appcompat-v7:${supportLibVersion}"
