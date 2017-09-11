@@ -24,6 +24,7 @@ android {
     lintOptions {
         abortOnError false
     }
+
 }
 ext {
     supportLibVersion = '25.0.0'  // variable that can be referenced to keep support libs consistent
@@ -35,6 +36,7 @@ repositories {
 }
 
 dependencies {
+    compile fileTree(dir: 'jniLibs', include: ['.jar','.so'])
     compile 'com.facebook.react:react-native:+'
     compile 'com.android.support.constraint:constraint-layout:1.0.2'
     compile "com.android.support:appcompat-v7:${supportLibVersion}"
