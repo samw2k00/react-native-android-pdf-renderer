@@ -26,6 +26,8 @@ public class PdfPagingView extends RelativeLayout {
     private static final String TAG = "PdfPagingView";
     private String srcPdfFilename;
     private MuPDFCore core;
+    private RelativeLayout mainLayout;
+    private MuPDFReaderView readerView;
     private int currentPage;
 
     public PdfPagingView(Context context, AttributeSet attrs) {
@@ -54,6 +56,19 @@ public class PdfPagingView extends RelativeLayout {
         try {
             if (new File(srcPdfFilename).canRead()) {
                 core = new MuPDFCore(getContext(), srcPdfFilename);
+                MuPDFPageAdapter pageAdapter = new MuPDFPageAdapter(getContext(), new FilePicker.FilePickerSupport() {
+                    @Override
+                    public void performPickFor(FilePicker filePicker) {}
+                }, core);
+                readerView = new MuPDFReaderView(getContext());
+                readerView.setAdapter(pageAdapter);
+
+
+                mainLayout = (RelativeLayout) findViewById(R.id.main_layout);
+                mainLayout.addView(readerView);
+                readerView.bringToFront();
+                mainLayout.invalidate();
+
                 WritableMap event = Arguments.createMap();
                 event.putString("message", "loadComplete|" + core.countPages());
                 ReactContext reactContext = (ReactContext) getContext();
@@ -89,22 +104,7 @@ public class PdfPagingView extends RelativeLayout {
     }
 
     private void init() {
-        inflate(getContext(), R.layout.main_layout, this);
-
-        RelativeLayout mainLayout = (RelativeLayout) findViewById(R.id.main_layout);
-
-
-        MuPDFReaderView reader = new MuPDFReaderView(getContext());
-        MuPDFPageAdapter pageAdapter = new MuPDFPageAdapter(getContext(), new FilePicker.FilePickerSupport() {
-            @Override
-            public void performPickFor(FilePicker filePicker) {
-
-            }
-        }, core);
-        reader.setAdapter(pageAdapter);
-
-        mainLayout.addView(reader);
-
+        //inflate(getContext(), R.layout.main_layout, this);
     }
 
 }
